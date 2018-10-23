@@ -32,12 +32,12 @@ if (filename) {
         const modelOutput = Array.from(model.predict(myTensor).dataSync())
         const objIDs = [...new Set(modelOutput)]
         const objTypes = objIDs.map(x => OBJ_LIST[x])
-        console.log(`The image '${filename}' contains: ${objTypes.join(', ')}`)
+        console.log(`The image '${ filename }' contains: ${ objTypes.join(', ') }`)
       } catch (e) {
         console.error(`error loading model - ${ e }`)
       }
     }) 
 } else {
   console.error(`no input image specified.`)
-  return
+  return null
 }
