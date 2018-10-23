@@ -1,6 +1,5 @@
 require('dotenv').config()
-const fs = require('fs')
-const { createCanvas, Image, loadImage } = require('canvas')
+const { createCanvas, Image } = require('canvas')
 const canvas = createCanvas(513, 513)
 const ctx = canvas.getContext('2d')
 const sharp = require('sharp')
