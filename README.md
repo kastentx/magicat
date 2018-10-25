@@ -1,7 +1,7 @@
 ## 😺 `imageCat`  
 ### _like cat, but for images_
 
-A Deep Learning Powered CLI tool.
+A Deep Learning Powered CLI utility.
 
 ### _NOTE: documentation and install methods currently in development_
 
