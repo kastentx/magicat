@@ -1,4 +1,4 @@
-## `imageCat`  
+## 😺 `imageCat`  
 ### _like cat, but for images_
 
 A Deep Learning Powered CLI tool.
