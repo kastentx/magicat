@@ -6,7 +6,7 @@ const sharp = require('sharp')
 const filename = process.argv[2]
 
 const tf = require('@tensorflow/tfjs')
-require('@tensorflow/tfjs-node-gpu')
+require('@tensorflow/tfjs-node')
 
 const MODEL_PATH = 'file://tensorflowjs_model.pb'
 const WEIGHTS_PATH = 'file://weights_manifest.json'
