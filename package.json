@@ -1,0 +1,27 @@
+{
+  "name": "cli-tool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "@tensorflow/tfjs": "^0.13.2",
+    "@tensorflow/tfjs-node": "^0.1.19",
+    "canvas": "^2.0.1",
+    "dotenv": "^6.1.0",
+    "sharp": "^0.21.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kastentx/deeplearn-cli.git"
+  },
+  "author": "kastentx",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kastentx/deeplearn-cli/issues"
+  },
+  "homepage": "https://github.com/kastentx/deeplearn-cli#readme"
+}
