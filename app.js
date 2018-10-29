@@ -2,6 +2,7 @@ require('dotenv').config()
 require('@tensorflow/tfjs-node')
 const tf = require('@tensorflow/tfjs')
 const fs = require('fs')
+const terminalImage = require('terminal-image')
 const argv = require('yargs').argv
 const sharp = require('sharp')
 const { createCanvas, Image } = require('canvas')
@@ -54,13 +55,14 @@ const cleanTFJSResponse = (modelOutput) => {
   }
 }
 
-const invisibleSegment = (segmentName, imageObj, data) => {
+const invisibleSegment = (segmentName, MAXData) => {
   return new Promise((resolve, reject) => {
+    const data = MAXData.data
     let img = new Image()
     let imageURL
     img.onload = () => {
       try {
-        const flatSegMap = imageObj.response.flatSegMap
+        const flatSegMap = MAXData.response.flatSegMap
         ctx.drawImage(img, 0, 0, img.width, img.height)
         const imageData = ctx.getImageData(0, 0, img.width, img.height)
         const data = imageData.data
@@ -69,7 +71,7 @@ const invisibleSegment = (segmentName, imageObj, data) => {
             const segMapPixel = flatSegMap[i / 4]
             let objColor = [0, 0, 0]
             if (segMapPixel) {
-              objColor = getColor(imageObj.response.objectIDs.indexOf(segMapPixel))
+              objColor = getColor(MAXData.response.objectIDs.indexOf(segMapPixel))
               data[i]   = objColor[0]  // red channel
               data[i+1] = objColor[1]  // green channel
               data[i+2] = objColor[2]  // blue channel
@@ -95,15 +97,16 @@ const invisibleSegment = (segmentName, imageObj, data) => {
   })
 }
 
-const saveSegment = async (filename, segName, MAXData, data) => {
+const saveSegment = async (filename, segName, MAXData) => {
   const outputName = `${filename.split('.')[0]}-${ segName }.png`
   console.log(`saved ${ outputName }`)
-  fs.writeFileSync(outputName, Buffer.from(await invisibleSegment(segName, MAXData, data), 'base64'))
+  fs.writeFileSync(outputName, Buffer.from(await invisibleSegment(segName, MAXData), 'base64'))
   return null
 }
 
-if (filename) { 
-  sharp(filename)
+const getMAXResponse = filename => {
+  return new Promise((resolve, reject) => {
+    sharp(filename)
     .resize(513, 513, {
       fit: 'inside'
     }).toBuffer()
@@ -115,25 +118,52 @@ if (filename) {
         img.src = data
         const myTensor = tf.fromPixels(canvas).expandDims()   
         const model = await tf.loadFrozenModel(MODEL_PATH, WEIGHTS_PATH)
-        MAXData = cleanTFJSResponse(Array.from(model.predict(myTensor).dataSync()))
-        console.log(`The image '${ filename }' contains the following segments: ${ MAXData.response.objectTypes.join(', ') }.`)
+        resolve(
+          { ...cleanTFJSResponse(
+              Array.from(
+              model.predict(myTensor).dataSync())), 
+            data 
+          })
       } catch (e) {
-        console.error(`error processing image - ${ e }`)
-        return null
-      } finally {
-        if (argv.save) {
-          if (argv.save === 'all') {
-            MAXData.foundSegments.forEach(seg => {
-              saveSegment(filename, seg, MAXData, data)
-            })
-          } else if (argv.save !== true) {
-            saveSegment(filename, argv.save, MAXData, data)
-          } else {
-            console.log(`\nAfter the --save flag, provide an object name from the list above, or 'all' to save each segment individually.`)
-          }
+        reject(`error processing image - ${ e }`)
+      }
+    })  
+  })
+  
+}
+
+const processImage = async filename => {
+  if (filename) { 
+    try {    
+      MAXData = await getMAXResponse(filename)
+      console.log(`The image '${ filename }' contains the following segments: ${ MAXData.response.objectTypes.join(', ') }.`)
+
+      if (argv.save) {
+        if (argv.save === 'all') {
+          MAXData.foundSegments.forEach(seg => {
+            saveSegment(filename, seg, MAXData)
+          })
+        } else if (argv.save !== true && MAXData.foundSegments.indexOf(argv.save) !== -1) {
+          saveSegment(filename, argv.save, MAXData)
+        } else {
+          console.log(`\nAfter the --save flag, provide an object name from the list above, or 'all' to save each segment individually.`)
         }
       }
-    })
-} else {
-  console.error(`no input image specified.`)
-}
+
+      if (argv.show) {
+        if (MAXData.foundSegments.indexOf(argv.show) !== -1) {
+          (async () => console.log(await terminalImage.buffer(Buffer.from(await invisibleSegment(argv.show, MAXData), 'base64'))))()
+        } else {
+          console.log(`\nAfter the --show flag, provide an object name from the list above, or 'colormap' to view the highlighted object colormap.`)
+        }
+      }
+
+    } catch (e) {
+      console.error(`error processing image - ${ e }`)
+    }
+  } else {
+    console.error(`no input image specified.`)
+  }
+} 
+
+processImage(filename)
