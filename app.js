@@ -9,8 +9,6 @@ const { createCanvas, Image } = require('canvas')
 const canvas = createCanvas(513, 513)
 const ctx = canvas.getContext('2d')
 const filename = argv._[0]
-let processImg
-let MAXData
 
 const MODEL_PATH = 'file://tensorflowjs_model.pb'
 const WEIGHTS_PATH = 'file://weights_manifest.json'
@@ -39,6 +37,12 @@ const COLOR_MAP = {
 const COLOR_LIST = Object.values(COLOR_MAP)
 
 const getColor = pixel => COLOR_LIST[pixel - 1]
+
+const isValidated = filename => {
+  const imgTypes = ['bmp', 'gif', 'jpg', 'jpeg', 'png']
+  return filename.split('.').length > 1 
+    && imgTypes.indexOf(filename.split('.').slice(-1)[0]) !== -1
+}
 
 const cleanTFJSResponse = (modelOutput) => {
   const objIDs = [...new Set(modelOutput)] // eslint-disable-next-line
@@ -133,10 +137,19 @@ const getMAXResponse = filename => {
 }
 
 const processImage = async filename => {
-  if (filename) { 
+  if (isValidated(filename)) { 
     try {    
-      MAXData = await getMAXResponse(filename)
-      console.log(`The image '${ filename }' contains the following segments: ${ MAXData.response.objectTypes.join(', ') }.`)
+      const MAXData = await getMAXResponse(filename)
+
+      if (!argv.show || MAXData.foundSegments.indexOf(argv.show) === -1) {
+        console.log(`The image '${ filename }' contains the following segments: ${ MAXData.response.objectTypes.join(', ') }.`)
+      } else if (argv.show !== true) {
+        (async () => console.log(await terminalImage.buffer(Buffer.from(await invisibleSegment(argv.show, MAXData), 'base64'))))()
+      }
+
+      if (argv.show === true || (argv.show && MAXData.foundSegments.indexOf(argv.show) === -1)) {
+        console.log(`\nAfter the --show flag, provide an object name from the list above, or 'colormap' to view the highlighted object colormap.`)
+      }
 
       if (argv.save) {
         if (argv.save === 'all') {
@@ -149,15 +162,6 @@ const processImage = async filename => {
           console.log(`\nAfter the --save flag, provide an object name from the list above, or 'all' to save each segment individually.`)
         }
       }
-
-      if (argv.show) {
-        if (MAXData.foundSegments.indexOf(argv.show) !== -1) {
-          (async () => console.log(await terminalImage.buffer(Buffer.from(await invisibleSegment(argv.show, MAXData), 'base64'))))()
-        } else {
-          console.log(`\nAfter the --show flag, provide an object name from the list above, or 'colormap' to view the highlighted object colormap.`)
-        }
-      }
-
     } catch (e) {
       console.error(`error processing image - ${ e }`)
     }

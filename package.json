@@ -1,5 +1,5 @@
 {
-  "name": "cli-tool",
+  "name": "imageCat",
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
@@ -18,12 +18,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kastentx/deeplearn-cli.git"
+    "url": "git+https://github.com/kastentx/imageCat.git"
   },
   "author": "kastentx",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/kastentx/deeplearn-cli/issues"
+    "url": "https://github.com/kastentx/imageCat/issues"
   },
-  "homepage": "https://github.com/kastentx/deeplearn-cli#readme"
+  "homepage": "https://github.com/kastentx/imageCat#readme"
 }
