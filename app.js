@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+'use strict'
 process.env['TF_CPP_MIN_LOG_LEVEL'] = 2
 require('@tensorflow/tfjs-node')
 const tf = require('@tensorflow/tfjs')
@@ -40,7 +42,8 @@ const getColor = pixel => COLOR_LIST[pixel - 1]
 
 const isValidated = filename => {
   const imgTypes = ['bmp', 'gif', 'jpg', 'jpeg', 'png']
-  return filename.split('.').length > 1 
+  return filename 
+    && filename.split('.').length > 1 
     && imgTypes.indexOf(filename.split('.').slice(-1)[0]) !== -1
 }
 
