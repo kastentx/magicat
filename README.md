@@ -5,7 +5,7 @@ A Deep Learning Powered CLI utility.
 
 ### _NOTE: documentation and install methods currently in development_
 
-![screen shot](sample.png)
+![screen shot](assets/sample.png)
 
 If you've made it this far and you're feeling adventurous...
 * `git clone` this repo and `cd` into it
