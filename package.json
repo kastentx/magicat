@@ -1,8 +1,13 @@
 {
-  "name": "imageCat",
+  "name": "magicat",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "files": [
+    "app.js"
+  ],
+  "bin": {
+    "imgcat": "app.js"
+  },
   "dependencies": {
     "@tensorflow/tfjs": "^0.13.2",
     "@tensorflow/tfjs-node": "^0.1.19",
