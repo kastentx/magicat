@@ -3,18 +3,25 @@
 
 A Deep Learning powered CLI utility.
 
-### _NOTE: documentation and install methods currently in development_
+Install using `npm` to automatically add the `magicat` command to your PATH.
 
-![screen shot](assets/sample.png)
-
-If you've made it this far and you're feeling adventurous...
-* `git clone` this repo and `cd` into it
-* `npm install` the dependencies
-
-For now, the script must be executed by node directly, as follows:
 ```
-node app.js /path/to/image
+npm install -g magicat
 ```
-where the path to an image file is provided as an argument.
 
-**Developed for Python 2 environment.. Python 3 currently experimental/unsupported**
+That's it! 
+
+Now you can begin using the `magicat` command like your very own command-line crystall ball 🔮 to identify what objects are contained in an image.
+
+![basic usage](assets/basic.png)
+
+If you'd like to see an in-terminal preview of any of these objects, use the `--show` flag, followed by the name of the object you'd like to see. You can specify the 'colormap' to see all the objects highlighted within the original image.
+
+![object preview](assets/show-preview.png)
+_Object preview made possible thanks to @sindresorhus and [`terminal-image`](https://github.com/sindresorhus/terminal-image)_
+
+To save any of the objects as individual image files, use the `--save` flag, followed by the name of the object you'd like to save, or use 'all' to save all objects.
+
+![saving objects](assets/save-all.png)
+
+**Requires Python 2.. Python 3 currently experimental/unsupported**
