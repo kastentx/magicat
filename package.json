@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "imageCat",
+=======
+  "name": "imgcat",
+>>>>>>> faab6ac0383596f680870f7dfd93f613087b78e3
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
@@ -18,12 +22,22 @@
   },
   "repository": {
     "type": "git",
+<<<<<<< HEAD
     "url": "git+https://github.com/kastentx/imageCat.git"
+=======
+    "url": "git+https://github.com/kastentx/imgCat.git"
+>>>>>>> faab6ac0383596f680870f7dfd93f613087b78e3
   },
   "author": "kastentx",
   "license": "ISC",
   "bugs": {
+<<<<<<< HEAD
     "url": "https://github.com/kastentx/imageCat/issues"
   },
   "homepage": "https://github.com/kastentx/imageCat#readme"
+=======
+    "url": "https://github.com/kastentx/imgCat/issues"
+  },
+  "homepage": "https://github.com/kastentx/imgCat#readme"
+>>>>>>> faab6ac0383596f680870f7dfd93f613087b78e3
 }
