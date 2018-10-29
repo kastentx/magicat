@@ -1,12 +1,12 @@
 {
   "name": "magicat",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "",
   "files": [
     "app.js"
   ],
   "bin": {
-    "imgcat": "app.js"
+    "magicat": "app.js"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^0.13.2",
