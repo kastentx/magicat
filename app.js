@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 'use strict'
+
+// suppress TensorFlow 'extended instruction set' warning
 process.env['TF_CPP_MIN_LOG_LEVEL'] = 2
+
 require('@tensorflow/tfjs-node')
 const tf = require('@tensorflow/tfjs')
 const fs = require('fs')
@@ -23,8 +26,6 @@ let objMap = {}
 OBJ_LIST.forEach((x,i)=> objMap[x]=i)
 const OBJ_MAP = objMap
 
-const URLtoB64 = dataURL => dataURL.split(',')[1]
-
 const COLOR_MAP = {
   green: [0, 128, 0],
   red: [255, 0, 0],
@@ -35,19 +36,19 @@ const COLOR_MAP = {
   yellow: [255, 255, 0],
   gray: [192, 192, 192]
 }
-
 const COLOR_LIST = Object.values(COLOR_MAP)
-
 const getColor = pixel => COLOR_LIST[pixel - 1]
 
-const isValidated = filename => {
+const URLtoB64 = dataURL => dataURL.split(',')[1]
+
+const isImageFile = filename => {
   const imgTypes = ['bmp', 'gif', 'jpg', 'jpeg', 'png']
   return filename 
     && filename.split('.').length > 1 
     && imgTypes.indexOf(filename.split('.').slice(-1)[0]) !== -1
 }
 
-const cleanTFJSResponse = (modelOutput) => {
+const parsePrediction = (modelOutput) => {
   const objIDs = [...new Set(modelOutput)] // eslint-disable-next-line
   const objPixels = modelOutput.reduce((a, b) => (a[OBJ_LIST[b]] = ++a[OBJ_LIST[b]] || 1, a), {})
   const objTypes = objIDs.map(x => OBJ_LIST[x])
@@ -62,23 +63,23 @@ const cleanTFJSResponse = (modelOutput) => {
   }
 }
 
-const invisibleSegment = (segmentName, MAXData) => {
+const cropObject = (objectName, ModelJSON) => {
   return new Promise((resolve, reject) => {
-    const data = MAXData.data
+    const data = ModelJSON.data
     let img = new Image()
     let imageURL
     img.onload = () => {
       try {
-        const flatSegMap = MAXData.response.flatSegMap
+        const flatSegMap = ModelJSON.response.flatSegMap
         ctx.drawImage(img, 0, 0, img.width, img.height)
         const imageData = ctx.getImageData(0, 0, img.width, img.height)
         const data = imageData.data
-        if (segmentName === 'colormap') {
+        if (objectName === 'colormap') {
           for (let i = 0; i < data.length; i += 4) {
             const segMapPixel = flatSegMap[i / 4]
             let objColor = [0, 0, 0]
             if (segMapPixel) {
-              objColor = getColor(MAXData.response.objectIDs.indexOf(segMapPixel))
+              objColor = getColor(ModelJSON.response.objectIDs.indexOf(segMapPixel))
               data[i]   = objColor[0]  // red channel
               data[i+1] = objColor[1]  // green channel
               data[i+2] = objColor[2]  // blue channel
@@ -88,7 +89,7 @@ const invisibleSegment = (segmentName, MAXData) => {
         } else { 
           for (let i = 0; i < data.length; i += 4) {
             const segMapPixel = flatSegMap[i / 4]
-            if (segMapPixel !== OBJ_MAP[segmentName]) {
+            if (segMapPixel !== OBJ_MAP[objectName]) {
               data[i+3] = 0           // alpha
             }
           }
@@ -104,14 +105,14 @@ const invisibleSegment = (segmentName, MAXData) => {
   })
 }
 
-const saveSegment = async (filename, segName, MAXData) => {
+const saveObject = async (filename, segName, ModelJSON) => {
   const outputName = `${filename.split('.')[0]}-${ segName }.png`
   console.log(`saved ${ outputName }`)
-  fs.writeFileSync(outputName, Buffer.from(await invisibleSegment(segName, MAXData), 'base64'))
+  fs.writeFileSync(outputName, Buffer.from(await cropObject(segName, ModelJSON), 'base64'))
   return null
 }
 
-const getMAXResponse = filename => {
+const performMagic = filename => {
   return new Promise((resolve, reject) => {
     sharp(filename)
     .resize(513, 513, {
@@ -126,7 +127,7 @@ const getMAXResponse = filename => {
         const myTensor = tf.fromPixels(canvas).expandDims()   
         const model = await tf.loadFrozenModel(MODEL_PATH, WEIGHTS_PATH)
         resolve(
-          { ...cleanTFJSResponse(
+          { ...parsePrediction(
               Array.from(
               model.predict(myTensor).dataSync())), 
             data 
@@ -140,27 +141,27 @@ const getMAXResponse = filename => {
 }
 
 const processImage = async filename => {
-  if (isValidated(filename)) { 
+  if (isImageFile(filename)) { 
     try {    
-      const MAXData = await getMAXResponse(filename)
+      const ModelJSON = await performMagic(filename)
 
-      if (!argv.show || MAXData.foundSegments.indexOf(argv.show) === -1) {
-        console.log(`The image '${ filename }' contains the following segments: ${ MAXData.response.objectTypes.join(', ') }.`)
+      if (!argv.show || ModelJSON.foundSegments.indexOf(argv.show) === -1) {
+        console.log(`The image '${ filename }' contains the following segments: ${ ModelJSON.response.objectTypes.join(', ') }.`)
       } else if (argv.show !== true) {
-        (async () => console.log(await terminalImage.buffer(Buffer.from(await invisibleSegment(argv.show, MAXData), 'base64'))))()
+        (async () => console.log(await terminalImage.buffer(Buffer.from(await cropObject(argv.show, ModelJSON), 'base64'))))()
       }
 
-      if (argv.show === true || (argv.show && MAXData.foundSegments.indexOf(argv.show) === -1)) {
+      if (argv.show === true || (argv.show && ModelJSON.foundSegments.indexOf(argv.show) === -1)) {
         console.log(`\nAfter the --show flag, provide an object name from the list above, or 'colormap' to view the highlighted object colormap.`)
       }
 
       if (argv.save) {
         if (argv.save === 'all') {
-          MAXData.foundSegments.forEach(seg => {
-            saveSegment(filename, seg, MAXData)
+          ModelJSON.foundSegments.forEach(seg => {
+            saveObject(filename, seg, ModelJSON)
           })
-        } else if (argv.save !== true && MAXData.foundSegments.indexOf(argv.save) !== -1) {
-          saveSegment(filename, argv.save, MAXData)
+        } else if (argv.save !== true && ModelJSON.foundSegments.indexOf(argv.save) !== -1) {
+          saveObject(filename, argv.save, ModelJSON)
         } else {
           console.log(`\nAfter the --save flag, provide an object name from the list above, or 'all' to save each segment individually.`)
         }
