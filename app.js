@@ -1,4 +1,4 @@
-require('dotenv').config()
+process.env['TF_CPP_MIN_LOG_LEVEL'] = 2
 require('@tensorflow/tfjs-node')
 const tf = require('@tensorflow/tfjs')
 const fs = require('fs')
