@@ -10,8 +10,8 @@ const canvas = createCanvas(513, 513)
 const ctx = canvas.getContext('2d')
 const filename = argv._[0]
 
-const MODEL_PATH = 'file://tensorflowjs_model.pb'
-const WEIGHTS_PATH = 'file://weights_manifest.json'
+const MODEL_PATH = 'file://model/tensorflowjs_model.pb'
+const WEIGHTS_PATH = 'file://model/weights_manifest.json'
 
 const OBJ_LIST = ['background', 'airplane', 'bicycle', 'bird', 'boat', 
 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'dining table', 
