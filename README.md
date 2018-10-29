@@ -1,7 +1,7 @@
-## 😺 `imageCat`  
-### _like cat, but for images_
+## 🧙😺 `magicat`
+### _Deep learning magic.. with the convenience of `cat`!_
 
-A Deep Learning Powered CLI utility.
+A Deep Learning powered CLI utility.
 
 ### _NOTE: documentation and install methods currently in development_
 
