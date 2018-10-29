@@ -23,12 +23,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kastentx/imageCat.git"
+    "url": "git+https://github.com/kastentx/magicat.git"
   },
   "author": "kastentx",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/kastentx/imageCat/issues"
+    "url": "https://github.com/kastentx/magicat/issues"
   },
-  "homepage": "https://github.com/kastentx/imageCat#readme"
+  "homepage": "https://github.com/kastentx/magicat#readme"
 }
