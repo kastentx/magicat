@@ -23,5 +23,3 @@ _Object preview made possible thanks to @sindresorhus and [`terminal-image`](htt
 To save any of the objects as individual image files, use the `--save` flag, followed by the name of the object you'd like to save, or use 'all' to save all objects.
 
 ![saving objects](assets/save-all.png)
-
-**Requires Python 2.. Python 3 currently experimental/unsupported**
