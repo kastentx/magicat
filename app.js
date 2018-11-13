@@ -13,7 +13,7 @@ const sharp = require('sharp')
 const { createCanvas, Image } = require('canvas')
 const canvas = createCanvas(513, 513)
 const ctx = canvas.getContext('2d')
-const filename = argv._[0]
+const userInput = argv._[0]
 
 const MODEL_PATH = 'file://' + __dirname + '/model/tensorflowjs_model.pb'
 const WEIGHTS_PATH = 'file://' + __dirname + '/model/weights_manifest.json'
@@ -41,14 +41,26 @@ const getColor = pixel => COLOR_LIST[pixel - 1]
 
 const URLtoB64 = dataURL => dataURL.split(',')[1]
 
-const isImageFile = filename => {
+const isImageFile = userInput => {
   const imgTypes = ['bmp', 'gif', 'jpg', 'jpeg', 'png']
-  return filename 
-    && filename.split('.').length > 1 
-    && imgTypes.indexOf(filename.split('.').slice(-1)[0]) !== -1
+  try {
+    return fs.lstatSync(userInput).isFile() 
+      && userInput.split('.').length > 1 
+      && imgTypes.indexOf(userInput.split('.').slice(-1)[0]) !== -1
+  } catch(e) {
+    return false
+  }
 }
 
-const parsePrediction = (modelOutput) => {
+const isDirectory = userInput => {
+  try {
+    return fs.lstatSync(userInput).isDirectory()
+  } catch(e) {
+    return false
+  }
+}
+
+const parsePrediction = modelOutput => {
   const objIDs = [...new Set(modelOutput)] // eslint-disable-next-line
   const objPixels = modelOutput.reduce((a, b) => (a[OBJ_LIST[b]] = ++a[OBJ_LIST[b]] || 1, a), {})
   const objTypes = objIDs.map(x => OBJ_LIST[x])
@@ -63,7 +75,7 @@ const parsePrediction = (modelOutput) => {
   }
 }
 
-const cropObject = (objectName, modelJSON) => {
+const cropSegment = (segmentName, modelJSON) => {
   return new Promise((resolve, reject) => {
     const data = modelJSON.data
     let img = new Image()
@@ -74,7 +86,7 @@ const cropObject = (objectName, modelJSON) => {
         ctx.drawImage(img, 0, 0, img.width, img.height)
         const imageData = ctx.getImageData(0, 0, img.width, img.height)
         const data = imageData.data
-        if (objectName === 'colormap') {
+        if (segmentName === 'colormap') {
           for (let i = 0; i < data.length; i += 4) {
             const segMapPixel = flatSegMap[i / 4]
             let objColor = [0, 0, 0]
@@ -89,7 +101,7 @@ const cropObject = (objectName, modelJSON) => {
         } else { 
           for (let i = 0; i < data.length; i += 4) {
             const segMapPixel = flatSegMap[i / 4]
-            if (segMapPixel !== OBJ_MAP[objectName]) {
+            if (segMapPixel !== OBJ_MAP[segmentName]) {
               data[i+3] = 0           // alpha
             }
           }
@@ -98,82 +110,111 @@ const cropObject = (objectName, modelJSON) => {
         imageURL = canvas.toDataURL()
         resolve(URLtoB64(imageURL))
       } catch (e) {
-        reject(`${e} - image load error`)
+        reject(`${ e } - image load error`)
       }
     }
     img.src = data
   })
 }
 
-const saveObject = async (filename, segName, modelJSON) => {
-  const outputName = `${filename.split('.')[0]}-${ segName }.png`
+const saveSegment = async (fileName, segName, modelJSON) => {
+  const outputName = `${ fileName.split('.')[0] }-${ segName }.png`
   console.log(`saved ${ outputName }`)
-  fs.writeFileSync(outputName, Buffer.from(await cropObject(segName, modelJSON), 'base64'))
+  fs.writeFileSync(outputName, Buffer.from(await cropSegment(segName, modelJSON), 'base64'))
   return null
 }
 
-const getPrediction = filename => {
-  return new Promise((resolve, reject) => {
-    sharp(filename)
-    .resize(513, 513, {
-      fit: 'inside'
-    }).toBuffer()
-    .then(async data => {
-      try {
-        const img = new Image()
-        img.onload = async () => await ctx.drawImage(img, 0, 0)
-        img.onerror = err => { throw err }
-        img.src = data
-        const myTensor = tf.fromPixels(canvas).expandDims()   
-        const model = await tf.loadFrozenModel(MODEL_PATH, WEIGHTS_PATH)
-        resolve(
-          { ...parsePrediction(
-              Array.from(
-              model.predict(myTensor).dataSync())), 
+const getPrediction = fileName => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (isImageFile(fileName)) {
+        const data = await sharp(`${ process.cwd() }/${ fileName }`)
+          .resize(513, 513, {
+            fit: 'inside'
+          }).toBuffer()
+        try {
+          const img = new Image()
+          img.onload = async () => await ctx.drawImage(img, 0, 0)
+          img.onerror = err => { throw err }
+          img.src = data
+          const myTensor = tf.fromPixels(canvas).expandDims()   
+          const model = await tf.loadFrozenModel(MODEL_PATH, WEIGHTS_PATH)
+          resolve({ 
+            ...parsePrediction(
+            Array.from(
+            model.predict(myTensor).dataSync())), 
             data 
           })
-      } catch (e) {
-        reject(`error processing image - ${ e }`)
-      }
-    })  
-  })
-  
-}
-
-const processImage = async filename => {
-  if (isImageFile(filename)) { 
-    try {    
-      const modelJSON = await getPrediction(filename)
-
-      if (!argv.show || (argv.show !== true && modelJSON.foundSegments.indexOf(argv.show) === -1)) {
-        console.log(`The image '${ filename }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
-      } else if (argv.show === true) { 
-        (async () => console.log(await terminalImage.buffer(Buffer.from(modelJSON.data))))()
-      } else if (argv.show !== true) {
-        (async () => console.log(await terminalImage.buffer(Buffer.from(await cropObject(argv.show, modelJSON), 'base64'))))()
-      } 
-
-      if (argv.show === true || (argv.show && modelJSON.foundSegments.indexOf(argv.show) === -1)) {
-        console.log(`\nAfter the --show flag, provide an object name from the list above, or 'colormap' to view the highlighted object colormap.`)
-      }
-
-      if (argv.save) {
-        if (argv.save === 'all') {
-          modelJSON.foundSegments.forEach(seg => {
-            saveObject(filename, seg, modelJSON)
-          })
-        } else if (argv.save !== true && modelJSON.foundSegments.indexOf(argv.save) !== -1) {
-          saveObject(filename, argv.save, modelJSON)
-        } else {
-          console.log(`\nAfter the --save flag, provide an object name from the list above, or 'all' to save each segment individually.`)
+        } catch (e) {
+          reject(`error processing image - ${ e }`)
         }
       }
-    } catch (e) {
-      console.error(`error processing image - ${ e }`)
+    } catch(e) {
+      reject(`error preprocessing image - ${ e }`)
     }
+  })  
+}
+
+const processImage = async fileName => {
+  try {    
+    const modelJSON = await getPrediction(fileName)
+
+    if (!argv.show || (argv.show !== true && modelJSON.foundSegments.indexOf(argv.show) === -1)) {
+      console.log(`The image '${ fileName }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
+    } else if (argv.show === true) { 
+      (async () => console.log(await terminalImage.buffer(Buffer.from(modelJSON.data))))()
+    } else if (argv.show !== true) {
+      (async () => console.log(await terminalImage.buffer(Buffer.from(await cropSegment(argv.show, modelJSON), 'base64'))))()
+    } 
+
+    if (argv.show === true || (argv.show && modelJSON.foundSegments.indexOf(argv.show) === -1)) {
+      console.log(`\nAfter the --show flag, provide an object name from the list above, or 'colormap' to view the highlighted object colormap.`)
+    }
+
+    if (argv.save) {
+      if (argv.save === 'all') {
+        modelJSON.foundSegments.forEach(seg => {
+          saveSegment(fileName, seg, modelJSON)
+        })
+      } else if (argv.save !== true && modelJSON.foundSegments.indexOf(argv.save) !== -1) {
+        saveSegment(fileName, argv.save, modelJSON)
+      } else {
+        console.log(`\nAfter the --save flag, provide an object name from the list above, or 'all' to save each segment individually.`)
+      }
+    }
+  } catch (e) {
+    console.error(`error processing image ${ fileName } - ${ e }`)
+  }
+}
+
+const processDirectory = async dirName => {
+  console.log(`Scanning directory ${ dirName }...`)
+  let cleanDirName
+  if (dirName.substr(-1) === '/') {
+    cleanDirName = dirName.substr(0, dirName.length - 1)
   } else {
-    console.error(`no input image specified.`)
+    cleanDirName = dirName
+  }
+
+  const contents = fs.readdirSync(cleanDirName)
+  contents.map(async file => {
+    try {
+      const modelJSON = await getPrediction(cleanDirName + '/' + file)
+      console.log(`The image '${ file }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
+    } catch (e) {
+      console.log(`error processing directory ${ cleanDirName } - ${ e }`)
+    }
+  })
+}
+
+const handleInput = async input => {
+  if (isImageFile(input)) { 
+    processImage(input)
+  } else if (isDirectory(input)) {
+    await processDirectory(input)
+  } else {
+    console.error(`Invalid input. Please specify an image file or directory.`)
   }
 } 
 
-processImage(filename)
+handleInput(userInput)
