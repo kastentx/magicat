@@ -9,7 +9,7 @@ const tf = require('@tensorflow/tfjs')
 const fs = require('fs')
 const terminalImage = require('terminal-image')
 const argv = require('yargs').argv
-const sharp = require('sharp')
+const jimp = require('jimp')
 const { createCanvas, Image } = require('canvas')
 const canvas = createCanvas(513, 513)
 const ctx = canvas.getContext('2d')
@@ -128,22 +128,20 @@ const getPrediction = fileName => {
   return new Promise(async (resolve, reject) => {
     try {
       if (isImageFile(fileName)) {
-        const data = await sharp(`${ process.cwd() }/${ fileName }`)
-          .resize(513, 513, {
-            fit: 'inside'
-          }).toBuffer()
+        const data = await jimp.read(`${ process.cwd() }/${ fileName }`)
+        const image = await data.resize(500, 500, jimp.RESIZE_BILINEAR).getBufferAsync(jimp.MIME_PNG)
         try {
           const img = new Image()
           img.onload = async () => await ctx.drawImage(img, 0, 0)
           img.onerror = err => { throw err }
-          img.src = data
+          img.src = image
           const myTensor = tf.fromPixels(canvas).expandDims()   
           const model = await tf.loadFrozenModel(MODEL_PATH, WEIGHTS_PATH)
           resolve({ 
             ...parsePrediction(
             Array.from(
             model.predict(myTensor).dataSync())), 
-            data 
+            image 
           })
         } catch (e) {
           reject(`error processing image - ${ e }`)
