@@ -15,6 +15,10 @@ Now you can begin using the `magicat` command like your very own command-line cr
 
 ![basic usage](assets/basic.png)
 
+If you have multiple images you'd like to inspect, you can also specify the name of a directory containing image files.
+
+![directory scan](assets/directory.png)
+
 If you'd like to see an in-terminal preview of any of these objects, use the `--show` flag, followed by the name of the object you'd like to see. You can specify the 'colormap' to see all the objects highlighted within the original image.
 
 ![object preview](assets/show-preview.png)
