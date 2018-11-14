@@ -129,19 +129,19 @@ const getPrediction = fileName => {
     try {
       if (isImageFile(fileName)) {
         const data = await jimp.read(`${ process.cwd() }/${ fileName }`)
-        const image = await data.resize(500, 500, jimp.RESIZE_BILINEAR).getBufferAsync(jimp.MIME_PNG)
+        const scaledImage = await data.scaleToFit(513, 513).getBufferAsync(jimp.MIME_PNG)
         try {
           const img = new Image()
           img.onload = async () => await ctx.drawImage(img, 0, 0)
           img.onerror = err => { throw err }
-          img.src = image
+          img.src = scaledImage
           const myTensor = tf.fromPixels(canvas).expandDims()   
           const model = await tf.loadFrozenModel(MODEL_PATH, WEIGHTS_PATH)
           resolve({ 
             ...parsePrediction(
             Array.from(
             model.predict(myTensor).dataSync())), 
-            image 
+            data: scaledImage
           })
         } catch (e) {
           reject(`error processing image - ${ e }`)
@@ -156,7 +156,7 @@ const getPrediction = fileName => {
 const processImage = async fileName => {
   try {    
     const modelJSON = await getPrediction(fileName)
-
+    
     if (!argv.show || (argv.show !== true && modelJSON.foundSegments.indexOf(argv.show) === -1)) {
       console.log(`The image '${ fileName }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
     } else if (argv.show === true) { 
