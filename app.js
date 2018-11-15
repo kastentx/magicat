@@ -156,6 +156,9 @@ const showHelpScreen = () => {
   console.log(commandLineUsage(sections))
 }
 
+const filterDirectory = () => {
+  console.log(`filter stub`)
+}
 
 const parsePrediction = modelOutput => {
   const objIDs = [...new Set(modelOutput)] // eslint-disable-next-line
@@ -283,23 +286,27 @@ const processImage = async fileName => {
 }
 
 const processDirectory = async dirName => {
-  console.log(`Scanning directory ${ dirName }...`)
-  let cleanDirName
-  if (dirName.substr(-1) === '/') {
-    cleanDirName = dirName.substr(0, dirName.length - 1)
+  if (argv.contains) {
+    filterDirectory()
   } else {
-    cleanDirName = dirName
-  }
-
-  const contents = fs.readdirSync(cleanDirName)
-  contents.map(async file => {
-    try {
-      const modelJSON = await getPrediction(cleanDirName + '/' + file)
-      console.log(`The image '${ file }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
-    } catch (e) {
-      console.log(`error processing directory ${ cleanDirName } - ${ e }`)
+    console.log(`Scanning directory ${ dirName }...`)
+    let cleanDirName
+    if (dirName.substr(-1) === '/') {
+      cleanDirName = dirName.substr(0, dirName.length - 1)
+    } else {
+      cleanDirName = dirName
     }
-  })
+
+    const contents = fs.readdirSync(cleanDirName)
+    contents.map(async file => {
+      try {
+        const modelJSON = await getPrediction(cleanDirName + '/' + file)
+        console.log(`The image '${ file }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
+      } catch (e) {
+        console.log(`error processing directory ${ cleanDirName } - ${ e }`)
+      }
+    })
+  }
 }
 
 const handleInput = async input => {
