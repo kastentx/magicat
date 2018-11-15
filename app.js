@@ -10,6 +10,7 @@ const fs = require('fs')
 const terminalImage = require('terminal-image')
 const argv = require('yargs').argv
 const jimp = require('jimp')
+const commandLineUsage = require('command-line-usage')
 const { createCanvas, Image } = require('canvas')
 const canvas = createCanvas(513, 513)
 const ctx = canvas.getContext('2d')
@@ -59,6 +60,117 @@ const isDirectory = userInput => {
     return false
   }
 }
+
+const showHelpScreen = () => {
+  const sections = [
+    {
+      header: '🧙😺 magicat',
+      content: 'A Deep Learning powered CLI utility.'
+    },
+    {
+      header: 'Synopsis',
+      content: [
+        '$ magicat {underline file} [--{bold options}]',
+        '$ magicat {underline directory} [--{bold options}]'
+      ]
+    },
+    {
+      header: 'Options',
+      optionList: [
+        {
+          name: 'save',
+          typeLabel: '{underline object}',
+          description: "Save the specfied object to it's own file. Also works with 'all'.",
+        },
+        {
+          name: 'show',
+          typeLabel: '{underline object}',
+          description: "Show the specified object (or the entire image if blank) in the terminal.",
+        },
+        {
+          name: 'contains',
+          typeLabel: '{underline object}',
+          description: "Returns a list of images containing the specified object.",
+        },
+        {
+          name: 'help',
+          description: 'Print this usage guide.'
+        }
+      ]
+    },
+    {
+      header: 'Examples',
+      content: [
+        {
+          desc: '1. Examine objects contained in an image. ',
+          example: '$ magicat path/to/image.png'
+        },
+        {
+          desc: "2. Show the 'person' from sample.jpg. ",
+          example: '$ magicat sample.jpg --show person'
+        },
+        {
+          desc: "3. Scan the 'pets' directory for images containing a dog. ",
+          example: '$ magicat pets/ --contains dog'
+        }
+      ]
+    },
+    {
+      header: 'Detectable Objects',
+      content: [
+        {
+          desc: '1. Airplane',
+          example: '11. Dining Table'
+        },
+        {
+          desc: "2. Bicycle",
+          example: '12. Dog'
+        },
+        {
+          desc: "3. Bird",
+          example: '13. Horse'
+        },
+        {
+          desc: "4. Boat",
+          example: '14. Motorbike'
+        },
+        {
+          desc: "5. Bottle",
+          example: '15. Person'
+        },
+        {
+          desc: '6. Bus',
+          example: '16. Potted Plant'
+        },
+        {
+          desc: "7. Car",
+          example: '17. Sheep'
+        },
+        {
+          desc: "8. Cat",
+          example: '18. Sofa'
+        },
+        {
+          desc: "9. Chair",
+          example: '19. Train'
+        },
+        {
+          desc: "10. Cow",
+          example: '20. TV'
+        }        
+      ]
+    },    
+    {
+      content: 'Project home: {underline https://github.com/CODAIT/magicat}'
+    },
+    {
+      content: 'Built using an open-source deep learning model from the Model Asset eXchange: {underline https://developer.ibm.com/exchanges/models}'
+    }
+  ]
+
+  console.log(commandLineUsage(sections))
+}
+
 
 const parsePrediction = modelOutput => {
   const objIDs = [...new Set(modelOutput)] // eslint-disable-next-line
@@ -209,7 +321,9 @@ const handleInput = async input => {
   if (isImageFile(input)) { 
     processImage(input)
   } else if (isDirectory(input)) {
-    await processDirectory(input)
+    processDirectory(input)
+  } else if (!input || input === '-h' || input === '--help') {
+    showHelpScreen()
   } else {
     console.error(`Invalid input. Please specify an image file or directory.`)
   }
