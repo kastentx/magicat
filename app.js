@@ -219,8 +219,8 @@ const cropSegment = (segmentName, modelJSON) => {
 
 const saveSegment = async (fileName, segName, modelJSON) => {
   const outputName = `${ fileName.split('.')[0] }-${ segName }.png`
-  console.log(`saved ${ outputName }`)
-  fs.writeFileSync(outputName, Buffer.from(await cropSegment(segName, modelJSON), 'base64'))
+  console.log(`saved ${ outputName.split('/').slice(-1)[0] }`)
+  fs.writeFileSync(`${ process.cwd() }/${ outputName.split('/').slice(-1)[0] }`, Buffer.from(await cropSegment(segName, modelJSON), 'base64'))
   return null
 }
 
@@ -258,7 +258,7 @@ const processImage = async fileName => {
     const modelJSON = await getPrediction(fileName)
 
     if (!argv.show || (argv.show !== true && modelJSON.foundSegments.indexOf(argv.show) === -1)) {
-      console.log(`The image '${ fileName }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
+      console.log(`The image '${ __dirname + '/' + fileName }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
     } else if (argv.show === true) { 
       (async () => console.log(await terminalImage.buffer(Buffer.from(modelJSON.data))))()
     } else if (argv.show !== true) {
@@ -266,7 +266,7 @@ const processImage = async fileName => {
     } 
 
     if (argv.show === true || (argv.show && modelJSON.foundSegments.indexOf(argv.show) === -1)) {
-      console.log(`\nAfter the --show flag, provide an object name from the list above, or 'colormap' to view the highlighted object colormap.`)
+      console.log(`\n${ argv.show.substr(0, 1).toUpperCase() + argv.show.substr(1) } not found. After the --show flag, provide an object name from the list above, or 'colormap' to view the highlighted object colormap.`)
     }
 
     if (argv.save) {
@@ -286,10 +286,11 @@ const processImage = async fileName => {
 }
 
 const processDirectory = async dirName => {
+  console.log(`Scanning directory ${ dirName }...`)
+  
   if (argv.contains) {
     filterDirectory()
   } else {
-    console.log(`Scanning directory ${ dirName }...`)
     let cleanDirName
     if (dirName.substr(-1) === '/') {
       cleanDirName = dirName.substr(0, dirName.length - 1)
