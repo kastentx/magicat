@@ -70,32 +70,17 @@ const showHelpScreen = () => {
     {
       header: 'Synopsis',
       content: [
-        '$ magicat {underline file} [--{bold options}]',
-        '$ magicat {underline directory} [--{bold options}]'
+        '$ magicat <file> [--{bold command}]',
+        '$ magicat <directory> [--{bold command}]',
+        '$ magicat [{bold help} | -{bold h}]'
       ]
     },
     {
-      header: 'Options',
-      optionList: [
-        {
-          name: 'save',
-          typeLabel: '{underline object}',
-          description: "Save the specfied object to it's own file. Also works with 'all'.",
-        },
-        {
-          name: 'show',
-          typeLabel: '{underline object}',
-          description: "Show the specified object (or the entire image if blank) in the terminal.",
-        },
-        {
-          name: 'contains',
-          typeLabel: '{underline object}',
-          description: "Returns a list of images containing the specified object.",
-        },
-        {
-          name: 'help',
-          description: 'Print this usage guide.'
-        }
+      header: 'Command List',
+      content: [
+        { name: '{bold save} {underline object}', summary: "Save the specfied object to it's own file. Also works with 'all'." },
+        { name: '{bold show} {underline object}', summary: "Show the specified object (or the entire image if blank) in the terminal." },
+        { name: '{bold contains} {underline object}', summary: "Returns a list of images containing the specified object." },
       ]
     },
     {
