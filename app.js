@@ -46,7 +46,7 @@ const isImageFile = userInput => {
   try {
     return fs.lstatSync(userInput).isFile() 
       && userInput.split('.').length > 1 
-      && imgTypes.indexOf(userInput.split('.').slice(-1)[0]) !== -1
+      && imgTypes.indexOf(userInput.toLowerCase().split('.').slice(-1)[0]) !== -1
   } catch(e) {
     return false
   }
@@ -156,7 +156,7 @@ const getPrediction = fileName => {
 const processImage = async fileName => {
   try {    
     const modelJSON = await getPrediction(fileName)
-    
+
     if (!argv.show || (argv.show !== true && modelJSON.foundSegments.indexOf(argv.show) === -1)) {
       console.log(`The image '${ fileName }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
     } else if (argv.show === true) { 
