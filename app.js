@@ -14,8 +14,8 @@ const { createCanvas, Image } = require('canvas')
 const canvas = createCanvas(513, 513)
 const ctx = canvas.getContext('2d')
 const argv = require('yargs')
-  .coerce('contains', opt => opt.toLowerCase())
-  .coerce('save', opt => opt.toLowerCase())
+  .coerce('contains', opt => opt ? opt.toLowerCase() : opt)
+  .coerce('save', opt => opt ? opt.toLowerCase() : opt)
   .coerce('show', opt => typeof opt === String ? opt.toLowerCase() : opt)
   .argv
 const userInput = argv._[0]
@@ -95,7 +95,7 @@ const showHelpScreen = () => {
       content: [
         {
           desc: '1. Examine objects contained in an image. ',
-          example: '$ magicat path/to/image.png'
+          example: '$ magicat path/to/IMAGE.PNG'
         },
         {
           desc: "2. Show the 'dining table' from sample.jpg. ",
@@ -103,7 +103,7 @@ const showHelpScreen = () => {
         },
         {
           desc: "3. Scan the 'pets' directory for images containing a dog. ",
-          example: '$ magicat pets/ --contains dog'
+          example: '$ magicat pets/ --contains Dog'
         }
       ]
     },
@@ -164,11 +164,12 @@ const showHelpScreen = () => {
 
 const objectFilter = (objName, modelJSON) => {
   if (containsObject(objName, modelJSON)) {
-    console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } was found in '${ process.cwd() }/${ modelJSON.fileName }'.`)
+    console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } found in '${ process.cwd() }/${ modelJSON.fileName }'.`)
+    process.exit(0)
   } else {
     console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } not found in '${ process.cwd() }/${ modelJSON.fileName }'.`)
+    process.exit(1)    
   }
-
 }
 
 const parsePrediction = modelOutput => {
@@ -315,32 +316,53 @@ const buildResponseMap = async (dirName, dirContents) => {
     let responseMap = {}
     try {
       for (let file of dirContents) {
-        const response = await getPrediction(`${ dirName }/${ file }`)
-        if (argv.contains && containsObject(argv.contains, response)) {
-          responseMap[file] = response
-        } else if (!argv.contains) {
-          responseMap[file] = response
+        if (isImageFile(`${ dirName }/${ file }`)) {
+          const response = await getPrediction(`${ dirName }/${ file }`)
+          if (argv.contains && containsObject(argv.contains, response)) {
+            responseMap[file] = response
+          } else if (!argv.contains) {
+            responseMap[file] = response
+          }
         }
       }
     } catch (e) {
       console.error(`error building response map - ${ e }`)
-      reject({})
     }
     resolve(responseMap)
   })
 }
 
 const processDirectory = async dirName => {
-  console.log(`Scanning directory '${ process.cwd() }/${ dirName }'${ argv.contains ? ` for ${ argv.contains }` : `` }...\n`)
+  let fullDirName
+  if (dirName.substr(0,1) === '/') {
+    fullDirName = dirName
+  } else if (dirName === '.') {
+    fullDirName = process.cwd()
+  } else {
+    fullDirName = `${ process.cwd() }/${ dirName }`
+  }
+
+  console.log(`Scanning directory '${ fullDirName }'${ argv.contains ? ` for ${ argv.contains }` : `` }...\n`)
+  
   let cleanDirName
   if (dirName.substr(-1) === '/') {
     cleanDirName = dirName.substr(0, dirName.length - 1)
   } else {
     cleanDirName = dirName
   }
-  const rawContents = fs.readdirSync(cleanDirName)
+
+  const rawContents = await fs.readdirSync(cleanDirName)
   const responseMap = await buildResponseMap(cleanDirName, rawContents)
   const contents = Object.keys(responseMap)
+
+  if (argv.contains) {
+    if (contents.length > 0) {
+      console.log(`${ argv.contains.substr(0, 1).toUpperCase() + argv.contains.substr(1) } found in:\n`)
+    } else {
+      console.log(`No ${ argv.contains.substr(0, 1).toUpperCase() + argv.contains.substr(1) }${ argv.contains == 'bus' ? `es` : `s` } found.`)
+    }
+  }
+
   contents.forEach(async file => {
     try {
       if (argv.contains) {
@@ -362,8 +384,7 @@ const processDirectory = async dirName => {
 
 }
 
-const handleInput = async rawInput => {
-  const input = rawInput.toLowerCase()
+const handleInput = async input => {
   if (isImageFile(input)) { 
     processImage(input)
   } else if (isDirectory(input)) {
