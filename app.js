@@ -164,9 +164,9 @@ const showHelpScreen = () => {
 
 const objectFilter = (objName, modelJSON) => {
   if (containsObject(objName, modelJSON)) {
-    console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } was found in '${ __dirname }/${ modelJSON.fileName }'.`)
+    console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } was found in '${ process.cwd() }/${ modelJSON.fileName }'.`)
   } else {
-    console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } not found in '${ __dirname }/${ modelJSON.fileName }'.`)
+    console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } not found in '${ process.cwd() }/${ modelJSON.fileName }'.`)
   }
 
 }
@@ -297,7 +297,7 @@ const processImage = async fileName => {
     if (argv.contains) {
       objectFilter(argv.contains, modelJSON)
     } else {
-      console.log(`The image '${ __dirname }/${ fileName }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
+      console.log(`The image '${ process.cwd() }/${ fileName }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
     }
     if (argv.show) {
       showPreview(argv.show, modelJSON)
@@ -331,7 +331,7 @@ const buildResponseMap = async (dirName, dirContents) => {
 }
 
 const processDirectory = async dirName => {
-  console.log(`Scanning directory '${ __dirname }/${ dirName }'${ argv.contains ? ` for ${ argv.contains }` : `` }...\n`)
+  console.log(`Scanning directory '${ process.cwd() }/${ dirName }'${ argv.contains ? ` for ${ argv.contains }` : `` }...\n`)
   let cleanDirName
   if (dirName.substr(-1) === '/') {
     cleanDirName = dirName.substr(0, dirName.length - 1)
@@ -344,7 +344,7 @@ const processDirectory = async dirName => {
   contents.forEach(async file => {
     try {
       if (argv.contains) {
-        console.log(`${ __dirname }/${ cleanDirName }/${ file }`)
+        console.log(`${ process.cwd() }/${ cleanDirName }/${ file }`)
       } else {
         console.log(`The image '${ file }' contains the following segments: ${ responseMap[file].response.objectTypes.join(', ') }.`)
       }
