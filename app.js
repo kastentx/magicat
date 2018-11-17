@@ -87,7 +87,8 @@ const showHelpScreen = () => {
       content: [
         { name: '{bold save} {underline object}', summary: "Save the specfied object to it's own file. Also works with 'all'." },
         { name: '{bold show} {underline object}', summary: "Show the specified object (or the entire image if blank) in the terminal." },
-        { name: '{bold contains} {underline object}', summary: "Returns a list of images containing the specified object." },
+        { name: '{bold contains} {underline object} [--{bold verbose}]', summary: "Returns list of images containing the specified object." },
+        { name: ' ', summary: "(Use --verbose option to see all results)." },
       ]
     },
     {
@@ -167,7 +168,9 @@ const objectFilter = (objName, modelJSON) => {
     console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } found in '${ process.cwd() }/${ modelJSON.fileName }'.`)
     process.exit(0)
   } else {
-    console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } not found in '${ process.cwd() }/${ modelJSON.fileName }'.`)
+    if (argv.verbose === true) {
+      console.log(`\n${ objName.substr(0, 1).toUpperCase() + objName.substr(1) } not found in '${ process.cwd() }/${ modelJSON.fileName }'.`)
+    }
     process.exit(1)    
   }
 }
@@ -298,7 +301,7 @@ const processImage = async fileName => {
     if (argv.contains) {
       objectFilter(argv.contains, modelJSON)
     } else {
-      console.log(`The image '${ process.cwd() }/${ fileName }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
+      console.log(`The image '${ fileName }' contains the following segments: ${ modelJSON.response.objectTypes.join(', ') }.`)
     }
     if (argv.show) {
       showPreview(argv.show, modelJSON)
@@ -332,7 +335,9 @@ const buildResponseMap = async (dirName, dirContents) => {
   })
 }
 
-const processDirectory = async dirName => {
+const processDirectory = async dirname => {
+  const dirName = dirname.substr(-1) === '/' ? dirname.substr(0, dirname.length - 1) : dirname
+  
   let fullDirName
   if (dirName.substr(0,1) === '/') {
     fullDirName = dirName
@@ -344,16 +349,10 @@ const processDirectory = async dirName => {
 
   console.log(`Scanning directory '${ fullDirName }'${ argv.contains ? ` for ${ argv.contains }` : `` }...\n`)
   
-  let cleanDirName
-  if (dirName.substr(-1) === '/') {
-    cleanDirName = dirName.substr(0, dirName.length - 1)
-  } else {
-    cleanDirName = dirName
-  }
-
-  const rawContents = await fs.readdirSync(cleanDirName)
-  const responseMap = await buildResponseMap(cleanDirName, rawContents)
+  const rawContents = await fs.readdirSync(dirName)
+  const responseMap = await buildResponseMap(dirName, rawContents)
   const contents = Object.keys(responseMap)
+  const nonMatches = rawContents.filter(file => (!contents.includes(file)))
 
   if (argv.contains) {
     if (contents.length > 0) {
@@ -366,7 +365,7 @@ const processDirectory = async dirName => {
   contents.forEach(async file => {
     try {
       if (argv.contains) {
-        console.log(`${ process.cwd() }/${ cleanDirName }/${ file }`)
+        console.log(`${ fullDirName }/${ file }`)
       } else {
         console.log(`The image '${ file }' contains the following segments: ${ responseMap[file].response.objectTypes.join(', ') }.`)
       }
@@ -378,9 +377,16 @@ const processDirectory = async dirName => {
         showPreview(argv.show, responseMap[file])
       }
     } catch (e) {
-      console.log(`error processing directory ${ cleanDirName } - ${ e }`)
+      console.log(`error processing directory ${ dirName } - ${ e }`)
     }
   })
+
+  if (argv.contains && argv.verbose === true && nonMatches.length) {
+    console.log(`\nNo ${ argv.contains.substr(0, 1).toUpperCase() + argv.contains.substr(1) }${ argv.contains == 'bus' ? `es` : `s` } found in:\n`)
+    nonMatches.forEach(miss => {
+      console.log(`${ fullDirName }/${ miss }`)
+    })
+  }
 
 }
 
