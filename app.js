@@ -20,7 +20,6 @@ const argv = require('yargs')
   .argv
 const userInput = argv._[0]
 
-
 const MODEL_PATH = `file://${ __dirname }/model/tensorflowjs_model.pb`
 const WEIGHTS_PATH = `file://${ __dirname }/model/weights_manifest.json`
 
@@ -72,7 +71,7 @@ const showHelpScreen = () => {
   const sections = [
     {
       header: '🧙😺 magicat',
-      content: 'A Deep Learning powered CLI utility.'
+      content: 'A Deep Learning powered CLI utility for identifying the contents of image files. Your very own command-line crystal ball 🔮.'
     },
     {
       header: 'Synopsis',
@@ -153,11 +152,11 @@ const showHelpScreen = () => {
         }        
       ]
     },    
-    {
-      content: 'Project home: {underline https://github.com/CODAIT/magicat}'
+    { 
+      content: '{bold Project home}: {underline https://github.com/CODAIT/magicat}' 
     },
-    {
-      content: 'Built using an open-source deep learning model from the Model Asset eXchange: {underline https://developer.ibm.com/exchanges/models}'
+    { 
+      content: 'Built using an open-source deep learning model from the {bold Model Asset eXchange}: {underline https://developer.ibm.com/exchanges/models}' 
     }
   ]
   console.log(commandLineUsage(sections))
